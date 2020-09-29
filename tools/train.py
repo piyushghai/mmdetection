@@ -3,20 +3,18 @@ import copy
 import os
 import os.path as osp
 import time
-import warnings
-
+import sys
 import mmcv
 import torch
 from mmcv import Config, DictAction
 from mmcv.runner import init_dist
-from mmcv.utils import get_git_hash
 
 from mmdet import __version__
 from mmdet.apis import set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
 from mmdet.utils import collect_env, get_root_logger
-
+#import herring.torch as herring
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -64,31 +62,38 @@ def parse_args():
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--learning_rate', type=float, default=0.02)
+    parser.add_argument('--n_epochs', type=int)
+    parser.add_argument('--fp16', type=int, default=0)
+    parser.add_argument('--run_herring', type=int, default=0)
+
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
-
-    if args.options and args.cfg_options:
-        raise ValueError(
-            '--options and --cfg-options cannot be both '
-            'specified, --options is deprecated in favor of --cfg-options')
-    if args.options:
-        warnings.warn('--options is deprecated in favor of --cfg-options')
-        args.cfg_options = args.options
 
     return args
 
 
 def main():
     args = parse_args()
-
+    print ("ARGS")
+    print (args)
+    
     cfg = Config.fromfile(args.config)
-    if args.cfg_options is not None:
-        cfg.merge_from_dict(args.cfg_options)
-    # import modules from string list.
-    if cfg.get('custom_imports', None):
-        from mmcv.utils import import_modules_from_strings
-        import_modules_from_strings(**cfg['custom_imports'])
+    print(cfg.keys())
+    cfg.evaluation.interval = 12
+    cfg.checkpoint_config.interval = 20    
+    if(args.n_epochs is not None):
+        cfg.total_epochs = args.n_epochs
+    if(args.fp16):
+        print("Training in FP16 mode")
+        cfg['fp16'] = {}
+        cfg.fp16['loss_scale'] = 512.
+    
+    cfg.optimizer['lr'] = args.learning_rate
+    
+    if args.options is not None:
+        cfg.merge_from_dict(args.options)
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -134,7 +139,7 @@ def main():
     logger.info('Environment info:\n' + dash_line + env_info + '\n' +
                 dash_line)
     meta['env_info'] = env_info
-    meta['config'] = cfg.pretty_text
+
     # log some basic info
     logger.info(f'Distributed training: {distributed}')
     logger.info(f'Config:\n{cfg.pretty_text}')
@@ -146,7 +151,6 @@ def main():
         set_random_seed(args.seed, deterministic=args.deterministic)
     cfg.seed = args.seed
     meta['seed'] = args.seed
-    meta['exp_name'] = osp.basename(args.config)
 
     model = build_detector(
         cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
@@ -160,7 +164,8 @@ def main():
         # save mmdet version, config file content and class names in
         # checkpoints as meta data
         cfg.checkpoint_config.meta = dict(
-            mmdet_version=__version__ + get_git_hash()[:7],
+            mmdet_version=__version__,
+            config=cfg.pretty_text,
             CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
     model.CLASSES = datasets[0].CLASSES
@@ -176,3 +181,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
