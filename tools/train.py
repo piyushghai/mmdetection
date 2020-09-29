@@ -14,7 +14,7 @@ from mmdet.apis import set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
 from mmdet.utils import collect_env, get_root_logger
-#import herring.torch as herring
+import herring.torch as herring
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -61,7 +61,7 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
-    parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--local_rank', type=int, default=herring.get_local_rank())
     parser.add_argument('--learning_rate', type=float, default=0.02)
     parser.add_argument('--n_epochs', type=int)
     parser.add_argument('--fp16', type=int, default=0)

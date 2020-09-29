@@ -7,7 +7,7 @@ import tempfile
 
 import mmcv
 import torch
-import torch.distributed as dist
+import herring.torch as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)

@@ -4,7 +4,7 @@ from collections import OrderedDict
 import mmcv
 import numpy as np
 import torch
-import torch.distributed as dist
+import herring.torch as dist
 import torch.nn as nn
 from mmcv.runner import auto_fp16
 from mmcv.utils import print_log

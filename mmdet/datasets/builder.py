@@ -8,6 +8,7 @@ from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
 from mmcv.utils import Registry, build_from_cfg
 from torch.utils.data import DataLoader
+import herring.torch as dist
 
 from .samplers import DistributedGroupSampler, DistributedSampler, GroupSampler
 
@@ -101,7 +102,7 @@ def build_dataloader(dataset,
     Returns:
         DataLoader: A PyTorch dataloader.
     """
-    rank, world_size = get_dist_info()
+    rank, world_size = dist.get_rank(), dist.get_world_size()
     if dist:
         # DistributedGroupSampler will definitely shuffle the data to satisfy
         # that images on each GPU are in the same group

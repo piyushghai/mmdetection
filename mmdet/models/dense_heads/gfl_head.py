@@ -1,5 +1,5 @@
 import torch
-import torch.distributed as dist
+import herring.torch as dist
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule, Scale, bias_init_with_prob, normal_init

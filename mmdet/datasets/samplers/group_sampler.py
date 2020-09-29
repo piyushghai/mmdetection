@@ -4,6 +4,7 @@ import math
 import numpy as np
 import torch
 from mmcv.runner import get_dist_info
+import herring.torch as dist
 from torch.utils.data import Sampler
 
 
@@ -71,7 +72,7 @@ class DistributedGroupSampler(Sampler):
                  samples_per_gpu=1,
                  num_replicas=None,
                  rank=None):
-        _rank, _num_replicas = get_dist_info()
+        _rank, _num_replicas = dist.get_rank(), dist.get_world_size()
         if num_replicas is None:
             num_replicas = _num_replicas
         if rank is None:
